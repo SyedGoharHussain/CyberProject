@@ -72,38 +72,58 @@ def run_attacker_listener(host='127.0.0.1', port=9999, duration=120, tamper_prob
                 
                 print(f"\n[Attacker] ✗✗✗ Connection #{connection_count} from {address}")
                 
-                # Receive transaction data
+                # Receive the FULL transaction — read until the defender
+                # half-closes its write side (handles messages > one packet).
                 try:
-                    data = client_socket.recv(4096)
+                    client_socket.settimeout(5)
+                    chunks = []
+                    while True:
+                        chunk = client_socket.recv(8192)
+                        if not chunk:
+                            break
+                        chunks.append(chunk)
+                    data = b"".join(chunks)
+
                     if data:
                         print(f"[Attacker] → Intercepted {len(data)} bytes of transaction data")
-                        
+
                         # Decide whether to tamper based on probability
                         should_tamper = random.random() < tamper_probability
-                        
+
                         if should_tamper:
-                            # Tamper with the data
-                            tampered_data = bytearray(data)
-                            # Flip bits in signature portion (usually in middle)
-                            if len(tampered_data) > 100:
-                                tamper_idx = len(tampered_data) // 2
-                                tampered_data[tamper_idx] ^= 0xFF
-                                tampered_data[tamper_idx + 1] ^= 0xFF
-                            
+                            # Corrupt the signature INSIDE the JSON so the
+                            # tampered transaction stays well-formed and
+                            # actually reaches the fog verifier intact.
+                            try:
+                                tx  = json.loads(data.decode('utf-8'))
+                                sig = tx.get('signature', '')
+                                if sig:
+                                    i = len(sig) // 2
+                                    flip = '0' if sig[i] != '0' else 'f'
+                                    tx['signature'] = sig[:i] + flip + sig[i + 1:]
+                                payload_out = json.dumps(tx).encode('utf-8')
+                            except Exception:
+                                # not JSON — fall back to a raw byte flip
+                                ba = bytearray(data)
+                                ba[len(ba) // 2] ^= 0xFF
+                                payload_out = bytes(ba)
+
                             print(f"[Attacker] → CORRUPTING signature bytes...")
                             print(f"[Attacker] → Sending TAMPERED transaction back to defender")
-                            client_socket.send(bytes(tampered_data))
+                            client_socket.sendall(payload_out)
                             attack_attempts += 1
                             tamper_success += 1
                         else:
-                            # Let it pass through
+                            # Let it pass through untouched
                             print(f"[Attacker] → Letting transaction pass (random decision)")
-                            client_socket.send(data)
+                            client_socket.sendall(data)
                             attack_attempts += 1
-                            
+
+                except socket.timeout:
+                    print(f"[Attacker] → Connection timed out while reading")
                 except Exception as e:
                     print(f"[Attacker] → Error during tampering: {e}")
-                
+
                 client_socket.close()
                 
             except socket.timeout:
