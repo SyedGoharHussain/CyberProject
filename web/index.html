@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PQC Microgrid — Defense Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="scanlines" aria-hidden="true"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <span class="glyph">▰▰</span>
+    </div>
+    <div class="brand-text">
+      <h1>PQC<span class="dim">·</span>MICROGRID</h1>
+      <p>Post-Quantum Blockchain Fog Defense Console</p>
+    </div>
+  </div>
+  <div class="status-cluster">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="status-pill" id="statusPill" data-state="idle">
+      <span class="dot"></span><span id="statusText">IDLE</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ══ CONFIG ══ -->
+  <section class="panel" id="configPanel">
+    <div class="panel-head">
+      <h2><span class="idx">01</span> Configuration</h2>
+      <span class="panel-tag">simulation parameters</span>
+    </div>
+    <div class="config-grid">
+      <div class="cfg-block">
+        <label for="txCount">Energy Transactions</label>
+        <div class="slider-row">
+          <input type="range" id="txCount" min="4" max="60" step="2" value="20" />
+          <output id="txCountOut">20</output>
+        </div>
+        <p class="hint">Each is ML-DSA-44 signed by a smart device. More = slower run.</p>
+      </div>
+
+      <div class="cfg-block">
+        <label>Attacker Node</label>
+        <div class="toggle" id="attackerToggle" data-on="true">
+          <button class="seg" data-val="true">ENGAGED</button>
+          <button class="seg" data-val="false">OFFLINE</button>
+        </div>
+        <p class="hint">A malicious node on 127.0.0.1:9999 intercepting traffic.</p>
+      </div>
+
+      <div class="cfg-block" id="tamperBlock">
+        <label>Tamper Intensity</label>
+        <div class="toggle wide" id="tamperToggle" data-val="50">
+          <button class="seg" data-val="0">0%</button>
+          <button class="seg" data-val="50">50%</button>
+          <button class="seg" data-val="100">100%</button>
+        </div>
+        <p class="hint">Share of intercepted transactions whose signature is corrupted.</p>
+      </div>
+
+      <div class="cfg-block run-block">
+        <button id="runBtn" class="run-btn">
+          <span class="run-label">&gt; RUN SIMULATION</span>
+        </button>
+        <button id="abortBtn" class="abort-btn" hidden>■ ABORT</button>
+        <div class="run-meta" id="runMeta">Ready. Configure and launch the simulation.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ LIVE CONSOLE ══ -->
+  <section class="panel" id="consolePanel">
+    <div class="panel-head">
+      <h2><span class="idx">02</span> Live Telemetry</h2>
+      <div class="console-tools">
+        <div class="filter-group" id="logFilter">
+          <button class="fbtn active" data-src="all">ALL</button>
+          <button class="fbtn" data-src="system">SYSTEM</button>
+          <button class="fbtn" data-src="defender">DEFENDER</button>
+          <button class="fbtn" data-src="attacker">ATTACKER</button>
+        </div>
+        <label class="autoscroll">
+          <input type="checkbox" id="autoscroll" checked /> auto-scroll
+        </label>
+      </div>
+    </div>
+    <div class="console" id="console">
+      <div class="console-empty" id="consoleEmpty">
+        <span class="cursor-line">root@microgrid:~$ <span class="blink">_</span></span>
+        <p>Awaiting launch. The defender and attacker nodes will report here in real time.</p>
+      </div>
+    </div>
+    <div class="console-foot">
+      <span id="lineCount">0 lines</span>
+      <span class="prog-wrap"><span class="prog-bar" id="progBar"></span></span>
+      <span id="elapsed">0.0s</span>
+    </div>
+  </section>
+
+  <!-- ══ METRICS ══ -->
+  <section class="panel" id="metricsPanel">
+    <div class="panel-head">
+      <h2><span class="idx">03</span> Mission Metrics</h2>
+      <span class="panel-tag">post-run summary</span>
+    </div>
+    <div class="metrics-grid" id="metricsGrid">
+      <div class="placeholder">Run a simulation to populate metrics.</div>
+    </div>
+  </section>
+
+  <!-- ══ DEVICES ══ -->
+  <section class="panel" id="devicePanel">
+    <div class="panel-head">
+      <h2><span class="idx">04</span> Smart Microgrid Devices</h2>
+      <span class="panel-tag">5 signing nodes</span>
+    </div>
+    <div class="device-grid" id="deviceGrid">
+      <div class="placeholder">Devices generate ML-DSA keypairs at simulation start.</div>
+    </div>
+  </section>
+
+  <!-- ══ FOG ══ -->
+  <section class="panel" id="fogPanel">
+    <div class="panel-head">
+      <h2><span class="idx">05</span> Fog Verification Network</h2>
+      <span class="panel-tag">3 edge nodes · PoA</span>
+    </div>
+    <div class="fog-grid" id="fogGrid">
+      <div class="placeholder">Fog nodes verify every signature before the blockchain.</div>
+    </div>
+  </section>
+
+  <!-- ══ BLOCKCHAIN ══ -->
+  <section class="panel" id="chainPanel">
+    <div class="panel-head">
+      <h2><span class="idx">06</span> Blockchain Ledger</h2>
+      <span class="panel-tag" id="chainBadge">proof-of-authority</span>
+    </div>
+    <div class="chain-track" id="chainTrack">
+      <div class="placeholder">Verified transactions are sealed into linked blocks.</div>
+    </div>
+  </section>
+
+  <!-- ══ TRANSACTIONS ══ -->
+  <section class="panel" id="ledgerPanel">
+    <div class="panel-head">
+      <h2><span class="idx">07</span> Transaction Ledger</h2>
+      <div class="filter-group" id="txFilter">
+        <button class="fbtn active" data-f="all">ALL</button>
+        <button class="fbtn" data-f="valid">VALID</button>
+        <button class="fbtn" data-f="rejected">REJECTED</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="ledger" id="ledger">
+        <thead>
+          <tr>
+            <th>#</th><th>TX ID</th><th>Sender</th><th>Receiver</th>
+            <th>Energy</th><th>Fog Node</th><th>Verify</th><th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody">
+          <tr><td colspan="8" class="placeholder">No transactions yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ ANALYTICS ══ -->
+  <section class="panel" id="graphPanel">
+    <div class="panel-head">
+      <h2><span class="idx">08</span> Performance Analytics</h2>
+      <span class="panel-tag">generated charts</span>
+    </div>
+    <div class="graph-grid" id="graphGrid">
+      <div class="placeholder">Charts are rendered after the run completes.</div>
+    </div>
+  </section>
+
+  <!-- ══ SECURITY ══ -->
+  <section class="panel" id="securityPanel">
+    <div class="panel-head">
+      <h2><span class="idx">09</span> Security Analysis</h2>
+      <span class="panel-tag">quantum threat model</span>
+    </div>
+    <div class="security-body" id="securityBody">
+      <div class="sec-static">
+        <div class="sec-row"><span class="k">Algorithm</span><span class="v">ML-DSA-44 · CRYSTALS-Dilithium</span></div>
+        <div class="sec-row"><span class="k">Standard</span><span class="v">NIST FIPS 204</span></div>
+        <div class="sec-row"><span class="k">Security Level</span><span class="v">Category 2 — 128-bit post-quantum</span></div>
+        <div class="sec-row"><span class="k">Hardness</span><span class="v">Module-LWE lattice problem</span></div>
+        <div class="sec-row danger"><span class="k">Classical Threat</span><span class="v">RSA / ECDSA broken by Shor's algorithm</span></div>
+        <div class="sec-row safe"><span class="k">Quantum Resistance</span><span class="v">No known quantum speedup against M-LWE</span></div>
+      </div>
+      <div class="sec-verdict" id="secVerdict">
+        <p class="placeholder">Tamper-detection verdict appears after a run.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span>CyberProject · Post-Quantum Blockchain Fog Microgrid</span>
+  <span class="dim">ML-DSA-44 — NIST FIPS 204 — quantum-safe by design</span>
+</footer>
+
+<!-- lightbox for graphs (kept hidden until a chart is clicked) -->
+<div class="lightbox" id="lightbox" hidden>
+  <img id="lightboxImg" alt="" />
+  <button class="lightbox-close" id="lightboxClose">✕</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

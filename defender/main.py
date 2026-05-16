@@ -52,23 +52,34 @@ def send_to_attacker(transaction: dict, attacker_host='127.0.0.1', attacker_port
         print(f"[Defender] Routing TX {tx_id} through attacker for vulnerability testing...", end=" ", flush=True)
         
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
+        sock.settimeout(5)
         sock.connect((attacker_host, attacker_port))
-        
-        # Send transaction as JSON bytes
+
+        # Send the full transaction, then half-close the write side so
+        # the attacker can detect the end of the message reliably.
         tx_bytes = json.dumps(transaction).encode('utf-8')
-        sock.send(tx_bytes)
-        
-        # Receive response (possibly tampered)
-        response = sock.recv(4096)
+        sock.sendall(tx_bytes)
+        sock.shutdown(socket.SHUT_WR)
+
+        # Receive the complete (possibly tampered) response — read until EOF.
+        chunks = []
+        while True:
+            chunk = sock.recv(8192)
+            if not chunk:
+                break
+            chunks.append(chunk)
         sock.close()
-        
+        response = b"".join(chunks)
+
         if response:
             try:
-                tampered_tx = json.loads(response.decode('utf-8'))
-                print(f"[ATTACKED] Attacker intercepted and modified!")
-                return tampered_tx
-            except:
+                returned_tx = json.loads(response.decode('utf-8'))
+                if returned_tx.get('signature') != transaction.get('signature'):
+                    print(f"[ATTACKED] Attacker corrupted the signature!")
+                else:
+                    print(f"[OK] Transaction passed through untouched")
+                return returned_tx
+            except Exception:
                 print(f"[OK] Transaction passed through")
                 return transaction
         else:
