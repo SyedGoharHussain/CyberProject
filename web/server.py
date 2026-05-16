@@ -123,6 +123,8 @@ class Simulation:
 
     # ── subprocess plumbing ────────────────────────────────────
     def _spawn(self, src, cwd, stdin_text):
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
             [sys.executable, "-u", "main.py"],
             cwd=cwd,
@@ -131,6 +133,8 @@ class Simulation:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            encoding="utf-8",
+            env=env,
         )
         with self.lock:
             self._procs.append(proc)

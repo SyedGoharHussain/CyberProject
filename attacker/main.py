@@ -12,6 +12,11 @@ import sys
 import json
 import random
 
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr.reconfigure(encoding='utf-8')
+
 ATTACKER_BANNER = """
 ╔══════════════════════════════════════════════════════════════╗
 ║            ATTACKER NODE - INDEPENDENT PROCESS               ║

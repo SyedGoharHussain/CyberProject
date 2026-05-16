@@ -11,6 +11,11 @@ import os
 import socket
 import json
 
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr.reconfigure(encoding='utf-8')
+
 # Defender has its own app/ folder in the same directory
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
